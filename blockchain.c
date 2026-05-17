@@ -234,3 +234,74 @@ void mark_attendance(const char* student_id, const char* course_code, const char
     printf("SUCCESS: Attendance marked for %s (%s) - %s\n", new_block->full_name, new_block->student_id, status);
     printf("         Block Hash: %.15s...\n", new_block->hash);
 }
+
+// --- SEGMENT 5: VALIDATION & TAMPER DETECTION ---
+
+int validate_chain() {
+    Block* current = blockchain_head;
+    Block* previous = NULL;
+    char recalculated_hash[65];
+
+    printf("\nAuditing Blockchain Integrity...\n");
+
+    while (current != NULL) {
+        // 1. Verify Hash Integrity
+        calculate_hash(current, recalculated_hash);
+        if (strcmp(current->hash, recalculated_hash) != 0) {
+            printf("[!] VALIDATION FAILED: Hash mismatch detected at Block %d!\n", current->index);
+            printf("    Expected: %s\n    Actual:   %s\n", current->hash, recalculated_hash);
+            return 0; // Invalid
+        }
+
+        // 2. Verify Cryptographic Signature
+        if (!verify_signature(current)) {
+            printf("[!] VALIDATION FAILED: Invalid ECDSA signature at Block %d!\n", current->index);
+            return 0; // Invalid
+        }
+
+        // 3. Verify Chain Linkage (Previous Hash)
+        if (previous != NULL) {
+            if (strcmp(current->previous_hash, previous->hash) != 0) {
+                printf("[!] VALIDATION FAILED: Broken link between Block %d and Block %d!\n", previous->index, current->index);
+                return 0; // Invalid
+            }
+        } else {
+            // It is the Genesis Block. Rubric: Verify previous_hash is 64 zeros.
+            char zeros[65];
+            memset(zeros, '0', 64);
+            zeros[64] = '\0';
+            if (strcmp(current->previous_hash, zeros) != 0) {
+                printf("[!] VALIDATION FAILED: Genesis block previous_hash has been altered!\n");
+                return 0; // Invalid
+            }
+        }
+
+        previous = current;
+        current = current->next;
+    }
+    
+    printf("SUCCESS: Blockchain is perfectly valid and cryptographically secure.\n");
+    return 1; // Valid
+}
+
+void tamper_block(int target_index, const char* new_status) {
+    Block* current = blockchain_head;
+    
+    while (current != NULL) {
+        if (current->index == target_index) {
+            printf("\n--- MALICIOUS ACTOR SIMULATION ---\n");
+            printf("Hacking Block %d...\n", target_index);
+            printf("Old Status: %s\n", current->status);
+            
+            // Maliciously alter the data directly in memory
+            strncpy(current->status, new_status, sizeof(current->status) - 1);
+            current->status[sizeof(current->status) - 1] = '\0';
+            
+            printf("New Status: %s\n", current->status);
+            printf("Notice: Hacker did not recalculate hashes or signatures.\n");
+            return;
+        }
+        current = current->next;
+    }
+    printf("Tamper failed: Block %d not found.\n", target_index);
+}

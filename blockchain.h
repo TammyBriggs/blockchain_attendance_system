@@ -51,4 +51,7 @@ int verify_signature(Block* block);
 
 void mark_attendance(const char* student_id, const char* course_code, const char* status);
 
+int validate_chain();
+void tamper_block(int target_index, const char* new_status);
+
 #endif

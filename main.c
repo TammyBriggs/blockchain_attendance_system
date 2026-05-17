@@ -5,7 +5,6 @@ int main() {
     printf("--- Blockchain Attendance System Initialization ---\n");
 
     if (!load_students("students.txt")) {
-        printf("System halted due to missing/empty registry.\n");
         return 1; 
     }
 
@@ -13,21 +12,24 @@ int main() {
     init_blockchain();
     sign_block(blockchain_head);
 
-    printf("\n--- Segment 4: Testing Attendance Marking ---\n");
+    printf("\n--- Marking Attendance ---\n");
+    mark_attendance("ALU001", "BLK101", "PRESENT"); // Becomes Block 1
+    mark_attendance("ALU002", "BLK101", "LATE");    // Becomes Block 2
 
-    // Test 1: A Valid Student (From your students.txt)
-    printf("\n[Test 1] Marking valid student ALU001...\n");
-    mark_attendance("ALU001", "BLK101", "PRESENT");
+    printf("\n--- Segment 5: Validation & Tamper Testing ---\n");
+    
+    // 1. Validate the pristine, untouched chain
+    printf("\n[Test 1] Validating pristine chain...");
+    validate_chain();
 
-    // Test 2: Another Valid Student
-    printf("\n[Test 2] Marking valid student ALU002...\n");
-    mark_attendance("ALU002", "BLK101", "LATE");
+    // 2. Simulate a hack: Change ALU001's status from PRESENT to ABSENT
+    tamper_block(1, "ABSENT");
 
-    // Test 3: An Invalid Student (Should trigger an error and abort)
-    printf("\n[Test 3] Marking INVALID student ALU999...\n");
-    mark_attendance("ALU999", "BLK101", "PRESENT");
+    // 3. Validate the chain again to ensure our system catches the tampering
+    printf("\n[Test 2] Validating chain after tamper event...");
+    validate_chain();
 
-    printf("\nReady for Segment 5 (Validation & Tamper Detection)!\n");
+    printf("\nReady for Segment 6 (Data Persistence & Viewing)!\n");
 
     return 0;
 }
