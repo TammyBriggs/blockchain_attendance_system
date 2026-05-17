@@ -5,7 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <openssl/sha.h> // Required for SHA256
+#include <openssl/sha.h>
+#include <openssl/evp.h>
+#include <openssl/ec.h>
+#include <openssl/err.h>
 
 #define MAX_STUDENTS 100
 
@@ -35,9 +38,15 @@ extern Student registry[MAX_STUDENTS];
 extern int student_count;
 extern Block* blockchain_head;
 
+// Global Cryptographic Keypair for the "Administrator"
+extern EVP_PKEY* admin_keypair;
+
 // Function Prototypes
 int load_students(const char* filename);
 void calculate_hash(Block* block, char* output_hash);
 void init_blockchain();
+void generate_keypair();
+void sign_block(Block* block);
+int verify_signature(Block* block);
 
 #endif
