@@ -9,6 +9,7 @@
 #include <openssl/evp.h>
 #include <openssl/ec.h>
 #include <openssl/err.h>
+#include <openssl/pem.h>
 
 #define MAX_STUDENTS 100
 

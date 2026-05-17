@@ -111,22 +111,34 @@ void init_blockchain() {
 EVP_PKEY* admin_keypair = NULL;
 
 void generate_keypair() {
-    // Create context for Elliptic Curve key generation
+    // 1. Try to load an existing key from the hard drive
+    FILE *keyfile = fopen("admin_key.pem", "rb");
+    if (keyfile != NULL) {
+        admin_keypair = PEM_read_PrivateKey(keyfile, NULL, NULL, NULL);
+        fclose(keyfile);
+        
+        if (admin_keypair != NULL) {
+            printf("SUCCESS: Loaded existing Admin Cryptographic Keypair from disk.\n");
+            return; // Exit the function, we have our key!
+        }
+    }
+
+    // 2. If no key file exists, generate a brand new one
+    printf("NOTICE: No existing key found. Generating new Admin Cryptographic Keypair...\n");
     EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, NULL);
     EVP_PKEY_keygen_init(pctx);
-    
-    // Use standard secp256r1 curve (P-256), widely used in modern crypto
     EVP_PKEY_CTX_set_ec_paramgen_curve_nid(pctx, NID_X9_62_prime256v1);
-    
-    // Generate the key
     EVP_PKEY_keygen(pctx, &admin_keypair);
     EVP_PKEY_CTX_free(pctx);
     
-    if (admin_keypair != NULL) {
-        printf("SUCCESS: Admin Cryptographic Keypair (ECDSA) generated.\n");
+    // 3. Save this newly generated key to a secure .pem file for future sessions
+    keyfile = fopen("admin_key.pem", "wb");
+    if (keyfile != NULL) {
+        PEM_write_PrivateKey(keyfile, admin_keypair, NULL, NULL, 0, NULL, NULL);
+        fclose(keyfile);
+        printf("SUCCESS: New Admin Keypair saved to 'admin_key.pem'.\n");
     } else {
-        printf("ERROR: Failed to generate cryptographic keypair.\n");
-        exit(1);
+        printf("ERROR: Failed to save keypair to disk.\n");
     }
 }
 
@@ -373,13 +385,23 @@ void view_records() {
     }
 
     while (current != NULL) {
-        // Convert Unix timestamp to human-readable string
         char time_str[26];
         struct tm* tm_info = localtime(&current->timestamp);
         strftime(time_str, 26, "%Y-%m-%d %H:%M:%S", tm_info);
 
-        // Verify signature dynamically for the display
-        int sig_valid = verify_signature(current);
+        // --- THE FIX IS HERE ---
+        // 1. Recalculate the hash from the current data
+        char recalculated_hash[65];
+        calculate_hash(current, recalculated_hash);
+        
+        // 2. Check if the data has been altered
+        int is_data_unaltered = (strcmp(current->hash, recalculated_hash) == 0);
+        
+        // 3. Check the cryptographic signature
+        int is_sig_valid = verify_signature(current);
+
+        // It is only truly valid if BOTH the data is untouched AND the signature is real
+        int overall_valid = (is_data_unaltered && is_sig_valid);
 
         printf("Block [%d] | Time: %s\n", current->index, time_str);
         
@@ -391,7 +413,8 @@ void view_records() {
             printf("  -> Status:  %-15s\n", current->status);
         }
         
-        printf("  -> Signature: [%s]\n", sig_valid ? "VALID" : "INVALID/TAMPERED");
+        // Output the strict validation result
+        printf("  -> Record Status: [%s]\n", overall_valid ? "VALID & AUTHENTIC" : "INVALID/TAMPERED");
         printf("  -> Hash: %.20s...\n", current->hash);
         printf("-----------------------------------------------------------------------------------\n");
 
