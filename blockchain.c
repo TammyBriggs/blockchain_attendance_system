@@ -167,3 +167,70 @@ int verify_signature(Block* block) {
     
     return (result == 1); 
 }
+
+// --- SEGMENT 4: MARKING ATTENDANCE ---
+
+void mark_attendance(const char* student_id, const char* course_code, const char* status) {
+    // 1. Validate the Student ID against our loaded registry
+    int student_found = 0;
+    Student* matched_student = NULL;
+    
+    for (int i = 0; i < student_count; i++) {
+        if (strcmp(registry[i].student_id, student_id) == 0) {
+            student_found = 1;
+            matched_student = &registry[i];
+            break;
+        }
+    }
+
+    // Reject and print error if ID not found
+    if (!student_found) {
+        printf("ERROR: Student ID '%s' not found in registry. Attendance aborted.\n", student_id);
+        return;
+    }
+
+    // 2. Traverse the linked list to find the current last block
+    Block* current = blockchain_head;
+    while (current->next != NULL) {
+        current = current->next;
+    }
+
+    // 3. Allocate memory for the new attendance block
+    Block* new_block = (Block*)malloc(sizeof(Block));
+    if (!new_block) {
+        printf("ERROR: Memory allocation failed for new block.\n");
+        return;
+    }
+
+    // 4. Populate the block with data
+    new_block->index = current->index + 1;
+    new_block->timestamp = time(NULL);
+    
+    // Safely copy strings using strncpy to prevent buffer overflows
+    strncpy(new_block->student_id, matched_student->student_id, sizeof(new_block->student_id) - 1);
+    strncpy(new_block->full_name, matched_student->full_name, sizeof(new_block->full_name) - 1);
+    strncpy(new_block->course_code, course_code, sizeof(new_block->course_code) - 1);
+    strncpy(new_block->status, status, sizeof(new_block->status) - 1);
+    
+    // Ensure null-termination
+    new_block->student_id[sizeof(new_block->student_id) - 1] = '\0';
+    new_block->full_name[sizeof(new_block->full_name) - 1] = '\0';
+    new_block->course_code[sizeof(new_block->course_code) - 1] = '\0';
+    new_block->status[sizeof(new_block->status) - 1] = '\0';
+
+    // 5. Link to the previous block cryptographically
+    strncpy(new_block->previous_hash, current->hash, sizeof(new_block->previous_hash));
+    
+    // Clear out signature array before signing
+    memset(new_block->signature, 0, sizeof(new_block->signature));
+
+    // 6. Finalize: Hash the data, sign it, and physically link it to the list
+    calculate_hash(new_block, new_block->hash);
+    sign_block(new_block);
+    
+    new_block->next = NULL;
+    current->next = new_block; // Append to the end of the chain
+
+    printf("SUCCESS: Attendance marked for %s (%s) - %s\n", new_block->full_name, new_block->student_id, status);
+    printf("         Block Hash: %.15s...\n", new_block->hash);
+}

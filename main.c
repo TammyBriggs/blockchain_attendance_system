@@ -4,27 +4,30 @@
 int main() {
     printf("--- Blockchain Attendance System Initialization ---\n");
 
-    // 1. Load the Student Registry
     if (!load_students("students.txt")) {
         printf("System halted due to missing/empty registry.\n");
         return 1; 
     }
 
-    // 2. Generate Cryptographic Keys for the System Admin
     generate_keypair();
-
-    // 3. Initialize the Blockchain (Create Genesis Block)
     init_blockchain();
-
-    // 4. Sign the Genesis Block to test our ECDSA logic
     sign_block(blockchain_head);
 
-    // 5. Verify the signature
-    int is_valid = verify_signature(blockchain_head);
+    printf("\n--- Segment 4: Testing Attendance Marking ---\n");
 
-    printf("\n--- Cryptography Verification ---\n");
-    printf("Genesis Block Signature Generated.\n");
-    printf("Cryptographic Verification Check: [%s]\n", is_valid ? "VALID AND AUTHENTIC" : "TAMPERED/INVALID");
+    // Test 1: A Valid Student (From your students.txt)
+    printf("\n[Test 1] Marking valid student ALU001...\n");
+    mark_attendance("ALU001", "BLK101", "PRESENT");
+
+    // Test 2: Another Valid Student
+    printf("\n[Test 2] Marking valid student ALU002...\n");
+    mark_attendance("ALU002", "BLK101", "LATE");
+
+    // Test 3: An Invalid Student (Should trigger an error and abort)
+    printf("\n[Test 3] Marking INVALID student ALU999...\n");
+    mark_attendance("ALU999", "BLK101", "PRESENT");
+
+    printf("\nReady for Segment 5 (Validation & Tamper Detection)!\n");
 
     return 0;
 }

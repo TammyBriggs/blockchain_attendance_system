@@ -49,4 +49,6 @@ void generate_keypair();
 void sign_block(Block* block);
 int verify_signature(Block* block);
 
+void mark_attendance(const char* student_id, const char* course_code, const char* status);
+
 #endif
