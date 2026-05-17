@@ -182,7 +182,7 @@ int verify_signature(Block* block) {
 
 // --- SEGMENT 4: MARKING ATTENDANCE ---
 
-void mark_attendance(const char* student_id, const char* course_code, const char* status) {
+int mark_attendance(const char* student_id, const char* course_code, const char* status) {
     // 1. Validate the Student ID against our loaded registry
     int student_found = 0;
     Student* matched_student = NULL;
@@ -198,7 +198,7 @@ void mark_attendance(const char* student_id, const char* course_code, const char
     // Reject and print error if ID not found
     if (!student_found) {
         printf("ERROR: Student ID '%s' not found in registry. Attendance aborted.\n", student_id);
-        return;
+        return 0;
     }
 
     // 2. Traverse the linked list to find the current last block
@@ -211,7 +211,7 @@ void mark_attendance(const char* student_id, const char* course_code, const char
     Block* new_block = (Block*)malloc(sizeof(Block));
     if (!new_block) {
         printf("ERROR: Memory allocation failed for new block.\n");
-        return;
+        return 0;
     }
 
     // 4. Populate the block with data
@@ -245,6 +245,8 @@ void mark_attendance(const char* student_id, const char* course_code, const char
 
     printf("SUCCESS: Attendance marked for %s (%s) - %s\n", new_block->full_name, new_block->student_id, status);
     printf("         Block Hash: %.15s...\n", new_block->hash);
+
+    return 1;
 }
 
 // --- SEGMENT 5: VALIDATION & TAMPER DETECTION ---

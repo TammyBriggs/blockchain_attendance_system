@@ -62,8 +62,9 @@ int main() {
                 printf("Enter Status (PRESENT/ABSENT/LATE): ");
                 scanf("%9s", input_status);
                 
-                mark_attendance(input_id, input_course, input_status);
-                save_chain(); // Immediately persist the new block to disk
+                if (mark_attendance(input_id, input_course, input_status) == 1) {
+                    save_chain();
+                }
                 break;
 
             case 2:
