@@ -54,4 +54,8 @@ void mark_attendance(const char* student_id, const char* course_code, const char
 int validate_chain();
 void tamper_block(int target_index, const char* new_status);
 
+void save_chain();
+int load_chain();
+void view_records();
+
 #endif

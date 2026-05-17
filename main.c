@@ -9,27 +9,26 @@ int main() {
     }
 
     generate_keypair();
-    init_blockchain();
-    sign_block(blockchain_head);
 
-    printf("\n--- Marking Attendance ---\n");
-    mark_attendance("ALU001", "BLK101", "PRESENT"); // Becomes Block 1
-    mark_attendance("ALU002", "BLK101", "LATE");    // Becomes Block 2
+    // --- NEW LOGIC: Load from disk, or initialize fresh ---
+    if (load_chain()) {
+        printf("Blockchain successfully restored from previous session.\n");
+    } else {
+        printf("No previous blockchain found. Initializing new chain...\n");
+        init_blockchain();
+        sign_block(blockchain_head);
+    }
 
-    printf("\n--- Segment 5: Validation & Tamper Testing ---\n");
+    printf("\n--- Segment 6: Persistence & Viewing Test ---\n");
     
-    // 1. Validate the pristine, untouched chain
-    printf("\n[Test 1] Validating pristine chain...");
-    validate_chain();
+    // Add a record just to make sure we have data
+    mark_attendance("ALU003", "BLK101", "PRESENT");
+    
+    // Save the chain to disk
+    save_chain();
 
-    // 2. Simulate a hack: Change ALU001's status from PRESENT to ABSENT
-    tamper_block(1, "ABSENT");
-
-    // 3. Validate the chain again to ensure our system catches the tampering
-    printf("\n[Test 2] Validating chain after tamper event...");
-    validate_chain();
-
-    printf("\nReady for Segment 6 (Data Persistence & Viewing)!\n");
+    // View the entire formatted ledger
+    view_records();
 
     return 0;
 }

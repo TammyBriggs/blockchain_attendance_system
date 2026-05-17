@@ -305,3 +305,96 @@ void tamper_block(int target_index, const char* new_status) {
     }
     printf("Tamper failed: Block %d not found.\n", target_index);
 }
+
+// --- SEGMENT 6: DATA PERSISTENCE & VIEWING ---
+
+void save_chain() {
+    FILE *file = fopen("blockchain.dat", "wb"); // 'wb' = write binary
+    if (file == NULL) {
+        printf("ERROR: Could not open file to save blockchain.\n");
+        return;
+    }
+
+    Block* current = blockchain_head;
+    int blocks_saved = 0;
+    
+    // Iterate through the chain and write each block to disk
+    while (current != NULL) {
+        fwrite(current, sizeof(Block), 1, file);
+        current = current->next;
+        blocks_saved++;
+    }
+
+    fclose(file);
+    printf("SUCCESS: Saved %d blocks to disk ('blockchain.dat').\n", blocks_saved);
+}
+
+int load_chain() {
+    FILE *file = fopen("blockchain.dat", "rb"); // 'rb' = read binary
+    if (file == NULL) {
+        // Normal behavior on very first run when no file exists yet
+        return 0; 
+    }
+
+    Block temp_block;
+    Block* current = NULL;
+    int blocks_loaded = 0;
+
+    // Read one block's worth of bytes at a time
+    while (fread(&temp_block, sizeof(Block), 1, file)) {
+        // Allocate fresh memory for the block in this new session
+        Block* new_block = (Block*)malloc(sizeof(Block));
+        *new_block = temp_block; 
+        
+        // CRITICAL: We must rebuild the pointers! The old ones are dead memory.
+        new_block->next = NULL;
+
+        if (blockchain_head == NULL) {
+            blockchain_head = new_block; // First block read becomes the head
+        } else {
+            current->next = new_block;   // Link to the previous block
+        }
+        current = new_block;
+        blocks_loaded++;
+    }
+
+    fclose(file);
+    printf("SUCCESS: Loaded %d blocks from disk.\n", blocks_loaded);
+    return 1; // Success
+}
+
+void view_records() {
+    printf("\n================================ ATTENDANCE LEDGER ================================\n");
+    Block* current = blockchain_head;
+    
+    if (current == NULL) {
+        printf("Ledger is empty.\n");
+        return;
+    }
+
+    while (current != NULL) {
+        // Convert Unix timestamp to human-readable string
+        char time_str[26];
+        struct tm* tm_info = localtime(&current->timestamp);
+        strftime(time_str, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+
+        // Verify signature dynamically for the display
+        int sig_valid = verify_signature(current);
+
+        printf("Block [%d] | Time: %s\n", current->index, time_str);
+        
+        if (current->index == 0) {
+            printf("  -> [SYSTEM GENESIS BLOCK]\n");
+        } else {
+            printf("  -> Student: %-15s | ID: %-8s | Course: %-8s\n", 
+                   current->full_name, current->student_id, current->course_code);
+            printf("  -> Status:  %-15s\n", current->status);
+        }
+        
+        printf("  -> Signature: [%s]\n", sig_valid ? "VALID" : "INVALID/TAMPERED");
+        printf("  -> Hash: %.20s...\n", current->hash);
+        printf("-----------------------------------------------------------------------------------\n");
+
+        current = current->next;
+    }
+}
