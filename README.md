@@ -38,4 +38,3 @@ gcc main.c blockchain.c -o attendance_system -lcrypto
 ```
 3. **First Boot:** On the very first run, the system will automatically generate a new ECDSA keypair (`admin_key.pem`), create a Genesis Block, and create a local database file (`blockchain.dat`).
 4. **Using the CLI:** Follow the interactive terminal menu to mark attendance, view the chain, validate integrity, and detect tampering.
-````
